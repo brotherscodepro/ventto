@@ -6,3 +6,7 @@ git add .
 git commit -m "o que fizeste"
 git push        # antes de fechares
 
+ARRANCAR
+
+npm run dev
+
