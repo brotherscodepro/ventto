@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo, useRef } from "react";
 
 /* ============================================================
    VENTTO — Weather App
-   Dark premium theme based on mockups
    ============================================================ */
 
 const C = {
@@ -285,42 +284,63 @@ const HeroScene = () => (
   </svg>
 );
 
-/* ---------- Hero video: plays once on app entry, then freezes ---------- */
-let heroPlayed = false;
-
-const HeroVideo = () => {
+/* ---------- App background: fullscreen looping video ---------- */
+const AppBackground = () => {
   const ref = useRef(null);
 
   useEffect(() => {
     const v = ref.current;
     if (!v) return;
 
-    const start = () => {
-      if (heroPlayed) {
-        // Already played this session: hold the final frame
-        try { v.currentTime = Math.max(0, (v.duration || 6) - 0.05); } catch { /* ignore */ }
-        v.pause();
-      } else {
-        v.play().catch(() => { heroPlayed = true; });
-      }
-    };
+    const play = () => v.play().catch(() => {});
+    const pause = () => v.pause();
+    play();
 
-    if (v.readyState >= 1) start();
-    else v.addEventListener("loadedmetadata", start);
-    return () => v.removeEventListener("loadedmetadata", start);
+    // Loop while the app is open; pause only when the person leaves it
+    const onVisibility = () => (document.hidden ? pause() : play());
+
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", pause);
+    window.addEventListener("pageshow", play);
+    window.addEventListener("blur", pause);
+    window.addEventListener("focus", play);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", pause);
+      window.removeEventListener("pageshow", play);
+      window.removeEventListener("blur", pause);
+      window.removeEventListener("focus", play);
+    };
   }, []);
 
   return (
-    <video
-      ref={ref}
-      muted
-      playsInline
-      preload="auto"
-      onEnded={() => { heroPlayed = true; }}
-      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-    >
-      <source src="/hero.mp4" type="video/mp4" />
-    </video>
+    <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
+      {/* Fallback scene, visible until the video paints */}
+      <div style={{ position: "absolute", inset: 0 }}><HeroScene /></div>
+
+      <video
+        ref={ref}
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+      >
+        <source src="/hero.mp4" type="video/mp4" />
+      </video>
+
+      {/* Scrim: keeps the top vivid, darkens downward so the cards stay readable */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "linear-gradient(180deg, rgba(6,7,12,0.10) 0%, rgba(6,7,12,0.25) 26%, rgba(6,7,12,0.62) 48%, rgba(6,7,12,0.82) 70%, rgba(6,7,12,0.90) 100%)",
+        }}
+      />
+    </div>
   );
 };
 
@@ -690,27 +710,19 @@ export default function App() {
         ::-webkit-scrollbar { display: none; }
       `}</style>
 
+      <AppBackground />
+
       {/* Ambient atmosphere */}
-      <div style={{ position: "fixed", top: "-12%", right: "-18%", width: 460, height: 460, borderRadius: "50%", background: "radial-gradient(circle, rgba(139,140,248,0.13) 0%, transparent 65%)", pointerEvents: "none", zIndex: 0 }} />
-      <div style={{ position: "fixed", top: "35%", left: "-22%", width: 420, height: 420, borderRadius: "50%", background: "radial-gradient(circle, rgba(59,130,246,0.09) 0%, transparent 65%)", pointerEvents: "none", zIndex: 0 }} />
-      <div style={{ position: "fixed", bottom: "-15%", right: "-10%", width: 380, height: 380, borderRadius: "50%", background: "radial-gradient(circle, rgba(124,58,237,0.08) 0%, transparent 65%)", pointerEvents: "none", zIndex: 0 }} />
-      {/* Stars */}
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, backgroundImage: "radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,0.5) 0%, transparent 100%), radial-gradient(1px 1px at 78% 8%, rgba(255,255,255,0.4) 0%, transparent 100%), radial-gradient(1.5px 1.5px at 55% 28%, rgba(255,255,255,0.35) 0%, transparent 100%), radial-gradient(1px 1px at 32% 45%, rgba(255,255,255,0.3) 0%, transparent 100%), radial-gradient(1px 1px at 88% 38%, rgba(255,255,255,0.35) 0%, transparent 100%), radial-gradient(1.5px 1.5px at 8% 62%, rgba(255,255,255,0.25) 0%, transparent 100%), radial-gradient(1px 1px at 66% 55%, rgba(255,255,255,0.3) 0%, transparent 100%), radial-gradient(1px 1px at 42% 72%, rgba(255,255,255,0.25) 0%, transparent 100%), radial-gradient(1.5px 1.5px at 92% 68%, rgba(255,255,255,0.3) 0%, transparent 100%), radial-gradient(1px 1px at 22% 85%, rgba(255,255,255,0.25) 0%, transparent 100%)" }} />
+      <div style={{ position: "fixed", top: "-12%", right: "-18%", width: 460, height: 460, borderRadius: "50%", background: "radial-gradient(circle, rgba(139,140,248,0.08) 0%, transparent 65%)", pointerEvents: "none", zIndex: 0 }} />
+      <div style={{ position: "fixed", top: "35%", left: "-22%", width: 420, height: 420, borderRadius: "50%", background: "radial-gradient(circle, rgba(59,130,246,0.06) 0%, transparent 65%)", pointerEvents: "none", zIndex: 0 }} />
+      <div style={{ position: "fixed", bottom: "-15%", right: "-10%", width: 380, height: 380, borderRadius: "50%", background: "radial-gradient(circle, rgba(124,58,237,0.05) 0%, transparent 65%)", pointerEvents: "none", zIndex: 0 }} />
       <div style={{ maxWidth: 480, margin: "0 auto", padding: "22px 16px 108px", position: "relative", zIndex: 1 }}>
 
         {/* ============ GERAL ============ */}
         {tab === "geral" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {/* Hero */}
-            <div style={{ position: "relative", overflow: "hidden", padding: "calc(env(safe-area-inset-top, 0px) + 26px) 22px 40px", margin: "-22px -16px 2px", background: "#0a0d18", minHeight: 420 }}>
-              {/* Fallback scene (shows if video not loaded) */}
-              <HeroScene />
-              {/* Video background — plays once (6s) then holds last frame */}
-              <HeroVideo />
-              {/* Left vignette for text legibility */}
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, rgba(6,7,12,0.82) 0%, rgba(6,7,12,0.35) 45%, rgba(6,7,12,0) 75%)", pointerEvents: "none" }} />
-              {/* Bottom fade into page */}
-              <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 150, background: "linear-gradient(180deg, rgba(8,8,14,0) 0%, rgba(8,8,14,0.6) 55%, #08080e 100%)", pointerEvents: "none" }} />
+            <div style={{ position: "relative", padding: "calc(env(safe-area-inset-top, 0px) + 26px) 6px 34px", margin: "-22px 0 2px", minHeight: 400 }}>
               <div style={{ position: "relative", textShadow: "0 2px 12px rgba(0,0,0,0.65)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 18 }}>
                   <div style={{ width: 40, height: 40, borderRadius: 20, background: "rgba(255,255,255,0.1)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>☰</div>
