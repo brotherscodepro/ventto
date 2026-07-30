@@ -1,0 +1,8 @@
+Puxar do Github
+
+git pull        # antes de começares a trabalhar
+# ... editas ...
+git add .
+git commit -m "o que fizeste"
+git push        # antes de fechares
+
