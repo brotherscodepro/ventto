@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { useWeather } from "./api/weather";
 
 /* ============================================================
    VENTTO — Weather App
@@ -20,7 +21,7 @@ const C = {
   blue: "#60A5FA",
 };
 
-const DATA = {
+const MOCK = {
   city: "Lisboa, Portugal",
   now: {
     temp: 24, condition: "Parcialmente nublado", feels: 25, high: 26, low: 18,
@@ -652,7 +653,8 @@ export default function App() {
     return () => clearInterval(playRef.current);
   }, [playing]);
 
-  const d = DATA;
+  const { data: live, loading, error, reload, place } = useWeather();
+  const d = live || MOCK;
   const metric = d.charts[chartMetric];
   const mMax = Math.max(...metric.days), mMin = Math.min(...metric.days);
   const mAvg = Math.round(metric.days.reduce((a, b) => a + b, 0) / metric.days.length);
@@ -731,7 +733,15 @@ export default function App() {
                     <div style={{ position: "absolute", top: 9, right: 9, width: 7, height: 7, borderRadius: 4, background: C.orange }} />
                   </div>
                 </div>
-                <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: 2, marginBottom: 4 }}>{d.city.toUpperCase()} ➤</div>
+                <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: 2, marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
+                  {d.city.toUpperCase()} ➤
+                  {loading && <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: 0, opacity: 0.6 }}>a atualizar…</span>}
+                </div>
+                {error && (
+                  <div onClick={() => reload()} style={{ fontSize: 12, color: "#FCA5A5", marginBottom: 6, cursor: "pointer" }}>
+                    Sem ligação — a mostrar dados de exemplo. Tocar para tentar de novo.
+                  </div>
+                )}
                 <div style={{ fontSize: 84, fontWeight: 200, lineHeight: 1 }}>{cv(d.now.temp)}°</div>
                 <div style={{ fontSize: 17, marginTop: 6 }}>{d.now.condition}</div>
                 <div style={{ fontSize: 14, color: C.dim, marginTop: 4 }}>Sensação {cv(d.now.feels)}°</div>
