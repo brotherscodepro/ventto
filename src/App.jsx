@@ -775,10 +775,10 @@ export default function App() {
         {tab === "geral" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {/* Hero — text left, video element right */}
-            <div style={{ position: "relative", margin: "-22px -16px 2px", padding: "calc(env(safe-area-inset-top, 0px) + 18px) 20px 28px", minHeight: 420 }}>
+            <div style={{ position: "relative", margin: "-22px -16px 2px", padding: "calc(env(safe-area-inset-top, 0px) + 18px) 22px 30px", minHeight: 420 }}>
 
               {/* Top bar: menu + bell */}
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 28, position: "relative", zIndex: 2 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 32, position: "relative", zIndex: 2 }}>
                 <div style={{ width: 44, height: 44, borderRadius: 22, background: "rgba(255,255,255,0.1)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17 }}>☰</div>
                 <div style={{ width: 44, height: 44, borderRadius: 22, background: "rgba(255,255,255,0.1)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
                   <NavIcon type="alertas" color="#fff" />
@@ -786,12 +786,12 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Info — anchored left, max ~55% width so it doesn't overlap the video element */}
-              <div style={{ position: "relative", zIndex: 2, maxWidth: "58%", textShadow: "0 2px 16px rgba(0,0,0,0.7)" }}>
+              {/* Info — left-aligned, like the mockup */}
+              <div style={{ position: "relative", zIndex: 2, textShadow: "0 2px 16px rgba(0,0,0,0.7)", display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
 
-                <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: 2.5, marginBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", marginBottom: 10 }}>
                   {d.city.toUpperCase()} ➤
-                  {loading && <span style={{ fontSize: 10.5, fontWeight: 500, letterSpacing: 0, opacity: 0.55 }}>a atualizar…</span>}
+                  {loading && <span style={{ fontSize: 10.5, fontWeight: 500, letterSpacing: 0, opacity: 0.55, textTransform: "none", marginLeft: 8 }}>a atualizar…</span>}
                 </div>
 
                 {error && (
@@ -800,26 +800,26 @@ export default function App() {
                   </div>
                 )}
 
-                <div style={{ fontSize: 88, fontWeight: 200, lineHeight: 0.95, letterSpacing: -3 }}>
-                  {cv(d.now.temp)}<span style={{ fontSize: 44, fontWeight: 300, verticalAlign: "super" }}>°</span>
+                <div style={{ fontSize: 96, fontWeight: 200, lineHeight: 0.9, letterSpacing: -4, marginBottom: 6 }}>
+                  {cv(d.now.temp)}<span style={{ fontSize: 48, fontWeight: 300, verticalAlign: "super" }}>°</span>
                 </div>
 
-                <div style={{ fontSize: 17, fontWeight: 500, marginTop: 8 }}>{d.now.condition}</div>
+                <div style={{ fontSize: 18, fontWeight: 500, marginTop: 4 }}>{d.now.condition}</div>
 
-                <div style={{ fontSize: 14, color: C.dim, marginTop: 5 }}>Sensação {cv(d.now.feels)}°</div>
+                <div style={{ fontSize: 15, color: C.dim, marginTop: 6 }}>Sensação {cv(d.now.feels)}°</div>
 
-                <div style={{ display: "flex", gap: 14, marginTop: 8, fontSize: 15 }}>
+                <div style={{ display: "flex", gap: 16, marginTop: 8, fontSize: 16 }}>
                   <span>↑ {cv(d.now.high)}°</span>
                   <span style={{ color: C.dim }}>↓ {cv(d.now.low)}°</span>
                 </div>
 
                 <div style={{
                   display: "inline-flex", alignItems: "center", gap: 7,
-                  marginTop: 18,
+                  marginTop: 20,
                   background: "rgba(255,255,255,0.1)",
                   backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)",
                   border: "1px solid rgba(255,255,255,0.14)",
-                  borderRadius: 999, padding: "9px 15px", fontSize: 13.5,
+                  borderRadius: 999, padding: "10px 16px", fontSize: 14,
                   textShadow: "none",
                 }}>
                   💨 {d.now.windDir} {d.now.wind} km/h
