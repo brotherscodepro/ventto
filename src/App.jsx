@@ -3,6 +3,7 @@ import { useWeather } from "./api/weather";
 
 /* ============================================================
    VENTTO — Weather App
+   Dark premium theme based on mockups
    ============================================================ */
 
 const C = {
@@ -285,9 +286,53 @@ const HeroScene = () => (
   </svg>
 );
 
+/* ---------- Weather → video mapping ---------- */
+const pickVideo = (weather) => {
+  if (!weather) return "/clear_night.mp4";
+  const { icon, condition } = weather.now;
+  const isNight = icon === "moon" || icon === "cloud" && condition.toLowerCase().includes("noite");
+  const code = (condition || "").toLowerCase();
+
+  // Trovoada
+  if (code.includes("trovoada")) return "/thunderstorm.mp4";
+  // Neve
+  if (code.includes("neve") || code.includes("grão"))
+    return isNight ? "/snow_night.mp4" : "/snow_day.mp4";
+  // Nevoeiro / geada
+  if (code.includes("nevoeiro")) return "/fog.mp4";
+  if (code.includes("gelad")) return "/frost.mp4";
+  // Chuva / chuvisco / aguaceiro
+  if (icon === "rain" || code.includes("chuva") || code.includes("chuvisco") || code.includes("aguaceiro"))
+    return isNight ? "/rain_night.mp4" : "/rain_day.mp4";
+  // Vento forte (>40 km/h)
+  if (weather.now.wind > 40) return "/windy.mp4";
+  // Encoberto
+  if (icon === "cloud" || code.includes("encoberto"))
+    return isNight ? "/overcast_night.mp4" : "/overcast_day.mp4";
+  // Parcialmente nublado
+  if (icon === "cloudSun" || code.includes("nublado") || code.includes("nuvens"))
+    return isNight ? "/partly_cloudy_night.mp4" : "/partly_cloudy_day.mp4";
+  // Limpo
+  if (icon === "moon") return "/clear_night.mp4";
+  return isNight ? "/clear_night.mp4" : "/clear_day.mp4";
+};
+
 /* ---------- App background: fullscreen looping video ---------- */
-const AppBackground = () => {
+const AppBackground = ({ videoSrc }) => {
   const ref = useRef(null);
+  const [fade, setFade] = useState(false);
+  const [activeSrc, setActiveSrc] = useState(videoSrc);
+
+  // Smooth cross-fade when the video source changes
+  useEffect(() => {
+    if (videoSrc === activeSrc) return;
+    setFade(true);
+    const t = setTimeout(() => {
+      setActiveSrc(videoSrc);
+      setFade(false);
+    }, 700);
+    return () => clearTimeout(t);
+  }, [videoSrc, activeSrc]);
 
   useEffect(() => {
     const v = ref.current;
@@ -295,11 +340,12 @@ const AppBackground = () => {
 
     const play = () => v.play().catch(() => {});
     const pause = () => v.pause();
-    play();
 
-    // Loop while the app is open; pause only when the person leaves it
+    const onLoaded = () => play();
+    v.addEventListener("loadeddata", onLoaded);
+    v.load();
+
     const onVisibility = () => (document.hidden ? pause() : play());
-
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("pagehide", pause);
     window.addEventListener("pageshow", play);
@@ -307,38 +353,43 @@ const AppBackground = () => {
     window.addEventListener("focus", play);
 
     return () => {
+      v.removeEventListener("loadeddata", onLoaded);
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pagehide", pause);
       window.removeEventListener("pageshow", play);
       window.removeEventListener("blur", pause);
       window.removeEventListener("focus", play);
     };
-  }, []);
+  }, [activeSrc]);
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
-      {/* Fallback scene, visible until the video paints */}
+      {/* Fallback scene */}
       <div style={{ position: "absolute", inset: 0 }}><HeroScene /></div>
 
       <video
         ref={ref}
-        autoPlay
+        key={activeSrc}
         muted
         loop
         playsInline
         preload="auto"
-        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+        style={{
+          position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover",
+          opacity: fade ? 0 : 1,
+          transition: "opacity 0.7s ease-in-out",
+        }}
       >
-        <source src="/hero.mp4" type="video/mp4" />
+        <source src={activeSrc} type="video/mp4" />
       </video>
 
-      {/* Scrim: keeps the top vivid, darkens downward so the cards stay readable */}
+      {/* Scrim: top stays vivid, darkens downward for card readability */}
       <div
         style={{
           position: "absolute",
           inset: 0,
           background:
-            "linear-gradient(180deg, rgba(6,7,12,0.10) 0%, rgba(6,7,12,0.25) 26%, rgba(6,7,12,0.62) 48%, rgba(6,7,12,0.82) 70%, rgba(6,7,12,0.90) 100%)",
+            "linear-gradient(180deg, rgba(6,7,12,0.05) 0%, rgba(6,7,12,0.15) 22%, rgba(6,7,12,0.55) 44%, rgba(6,7,12,0.80) 65%, rgba(6,7,12,0.90) 100%)",
         }}
       />
     </div>
@@ -712,7 +763,7 @@ export default function App() {
         ::-webkit-scrollbar { display: none; }
       `}</style>
 
-      <AppBackground />
+      <AppBackground videoSrc={pickVideo(live)} />
 
       {/* Ambient atmosphere */}
       <div style={{ position: "fixed", top: "-12%", right: "-18%", width: 460, height: 460, borderRadius: "50%", background: "radial-gradient(circle, rgba(139,140,248,0.08) 0%, transparent 65%)", pointerEvents: "none", zIndex: 0 }} />
@@ -723,32 +774,54 @@ export default function App() {
         {/* ============ GERAL ============ */}
         {tab === "geral" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {/* Hero */}
-            <div style={{ position: "relative", padding: "calc(env(safe-area-inset-top, 0px) + 26px) 6px 34px", margin: "-22px 0 2px", minHeight: 400 }}>
-              <div style={{ position: "relative", textShadow: "0 2px 12px rgba(0,0,0,0.65)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 18 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 20, background: "rgba(255,255,255,0.1)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>☰</div>
-                  <div style={{ width: 40, height: 40, borderRadius: 20, background: "rgba(255,255,255,0.1)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
-                    <NavIcon type="alertas" color="#fff" />
-                    <div style={{ position: "absolute", top: 9, right: 9, width: 7, height: 7, borderRadius: 4, background: C.orange }} />
-                  </div>
+            {/* Hero — text left, video element right */}
+            <div style={{ position: "relative", margin: "-22px -16px 2px", padding: "calc(env(safe-area-inset-top, 0px) + 18px) 20px 28px", minHeight: 420 }}>
+
+              {/* Top bar: menu + bell */}
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 28, position: "relative", zIndex: 2 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 22, background: "rgba(255,255,255,0.1)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17 }}>☰</div>
+                <div style={{ width: 44, height: 44, borderRadius: 22, background: "rgba(255,255,255,0.1)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+                  <NavIcon type="alertas" color="#fff" />
+                  <div style={{ position: "absolute", top: 10, right: 10, width: 7, height: 7, borderRadius: 4, background: C.orange }} />
                 </div>
-                <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: 2, marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
+              </div>
+
+              {/* Info — anchored left, max ~55% width so it doesn't overlap the video element */}
+              <div style={{ position: "relative", zIndex: 2, maxWidth: "58%", textShadow: "0 2px 16px rgba(0,0,0,0.7)" }}>
+
+                <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: 2.5, marginBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
                   {d.city.toUpperCase()} ➤
-                  {loading && <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: 0, opacity: 0.6 }}>a atualizar…</span>}
+                  {loading && <span style={{ fontSize: 10.5, fontWeight: 500, letterSpacing: 0, opacity: 0.55 }}>a atualizar…</span>}
                 </div>
+
                 {error && (
-                  <div onClick={() => reload()} style={{ fontSize: 12, color: "#FCA5A5", marginBottom: 6, cursor: "pointer" }}>
-                    Sem ligação — a mostrar dados de exemplo. Tocar para tentar de novo.
+                  <div onClick={() => reload()} style={{ fontSize: 12, color: "#FCA5A5", marginBottom: 6, cursor: "pointer", textShadow: "none" }}>
+                    Sem ligação — tocar para tentar de novo.
                   </div>
                 )}
-                <div style={{ fontSize: 84, fontWeight: 200, lineHeight: 1 }}>{cv(d.now.temp)}°</div>
-                <div style={{ fontSize: 17, marginTop: 6 }}>{d.now.condition}</div>
-                <div style={{ fontSize: 14, color: C.dim, marginTop: 4 }}>Sensação {cv(d.now.feels)}°</div>
-                <div style={{ display: "flex", gap: 16, marginTop: 8, fontSize: 15 }}>
-                  <span>↑ {cv(d.now.high)}°</span><span style={{ color: C.dim }}>↓ {cv(d.now.low)}°</span>
+
+                <div style={{ fontSize: 88, fontWeight: 200, lineHeight: 0.95, letterSpacing: -3 }}>
+                  {cv(d.now.temp)}<span style={{ fontSize: 44, fontWeight: 300, verticalAlign: "super" }}>°</span>
                 </div>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 7, marginTop: 14, background: "rgba(255,255,255,0.1)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 999, padding: "9px 15px", fontSize: 13.5 }}>
+
+                <div style={{ fontSize: 17, fontWeight: 500, marginTop: 8 }}>{d.now.condition}</div>
+
+                <div style={{ fontSize: 14, color: C.dim, marginTop: 5 }}>Sensação {cv(d.now.feels)}°</div>
+
+                <div style={{ display: "flex", gap: 14, marginTop: 8, fontSize: 15 }}>
+                  <span>↑ {cv(d.now.high)}°</span>
+                  <span style={{ color: C.dim }}>↓ {cv(d.now.low)}°</span>
+                </div>
+
+                <div style={{
+                  display: "inline-flex", alignItems: "center", gap: 7,
+                  marginTop: 18,
+                  background: "rgba(255,255,255,0.1)",
+                  backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)",
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  borderRadius: 999, padding: "9px 15px", fontSize: 13.5,
+                  textShadow: "none",
+                }}>
                   💨 {d.now.windDir} {d.now.wind} km/h
                 </div>
               </div>
